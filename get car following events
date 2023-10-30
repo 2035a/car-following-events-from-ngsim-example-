@@ -1,0 +1,65 @@
+import numpy as np
+from pandas import DataFrame as df
+import csv
+import array
+import scipy.io as sio
+import matplotlib.pyplot as plt
+from scipy import signal
+import pandas as pd
+import random
+
+
+NGSIM = pd.read_csv("0750am-0805am.csv")#####
+###################################################################### find the ID of all the car
+vehicle_ID=[]s
+for i in NGSIM['Vehicle_ID']:
+    if i not in vehicle_ID:
+        vehicle_ID.append(i)
+vehicle_ID = np.array(vehicle_ID)
+print(len(vehicle_ID))
+NGSIM0=NGSIM.values
+vehicle_ID1=[]
+############################################# - lane change ###################
+for i in vehicle_ID:
+    lane = []
+    vehicle_min = (min(np.argwhere(NGSIM0[:, 0] == i)))[0]
+    vehicle_max = (max(np.argwhere(NGSIM0[:, 0] == i)) + 1)[0]
+    for num in range(vehicle_min,vehicle_max):
+        if NGSIM0[num,7] not in lane:
+            lane.append(NGSIM0[num,7])
+    if len(lane)==1:
+        vehicle_ID1.append(i)
+################################## car-following ##############################################
+data=[]
+sum=0
+for i in vehicle_ID1[:2]:
+    vehicle_min = (min(np.argwhere(NGSIM0[:,0] == i)))[0]
+    vehicle_max = (max(np.argwhere(NGSIM0[:,0]==i))+1)[0]########## ego car=i
+    nls = []
+    for num in range(vehicle_min,vehicle_max):
+        if NGSIM0[num, 8] not in nls and NGSIM0[num, 8]!=0:
+            nls.append(NGSIM0[num, 8])######################i the front car
+    if len(nls) == 1:
+        sum+=len(nls)
+        print(i,len(nls),sum)
+        for k in range(len(nls)):
+            id = []
+            vehicle_min1 = (min(np.argwhere(NGSIM0[vehicle_min:vehicle_max, 8] == nls[k])))[0]
+            vehicle_max1 = (max(np.argwhere(NGSIM0[vehicle_min:vehicle_max, 8] == nls[k]))+1)[0]
+            for j in range(vehicle_min1+vehicle_min,vehicle_max1+vehicle_min):
+                s=NGSIM0[j][10]
+                vego=NGSIM0[j][5]
+                nl=NGSIM0[j][8]
+                time=NGSIM0[j][1]
+                if nl in NGSIM0[:,0]:
+                    vehicle_lead_min=(min(np.argwhere(NGSIM0[:,0]==nl)))[0]
+                    vehicle_lead_max =(max(np.argwhere(NGSIM0[:, 0] == nl)))[0]
+                    if time in NGSIM0[vehicle_lead_min:vehicle_lead_max,1]:
+                        vehicle_lead=np.argwhere(NGSIM0[vehicle_lead_min:vehicle_lead_max,1]==time)[0]+vehicle_lead_min
+                        vlead=NGSIM0[vehicle_lead,5]
+                        temp=np.array((s,vego,vlead))
+                        temp=np.hstack(temp)
+                        id.append(temp)
+            if len(id)!=0:
+                data.append(id)
+np.save('data1.npy',data)
